@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Netflix Auto Skip",
+  "version": "1.0",
+  "description": "Automatically skip intro and next episode on Netflix",
+  "permissions": ["activeTab"],
+  "content_scripts": [
+    {
+      "matches": ["https://www.netflix.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

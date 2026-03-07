@@ -1,16 +1,15 @@
-const selectors = [
-  '.watch-video--skip-content-button',
-  '.watch-video--next-episode-button',
-  '[aria-label="Skip Intro"]',
-  '[aria-label="Next Episode"]'
-];
-
 function autoClick() {
+  const selectors = [
+    '.watch-video--skip-content-button',
+    '.watch-video--next-episode-button',
+    '[aria-label="Skip Intro"]',
+    '[aria-label="Next Episode"]'
+  ];
+
   for (const selector of selectors) {
     const button = document.querySelector(selector);
-
     if (button && button.offsetParent !== null) {
-      console.log("Auto click:", selector);
+      console.log("點擊:", selector);
       button.click();
     }
   }
@@ -19,5 +18,4 @@ function autoClick() {
 }
 
 autoClick();
-
-console.log("Netflix Auto Skip enabled");
+console.log("Netflix Auto Skip 啟動");

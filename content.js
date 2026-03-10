@@ -19,30 +19,53 @@ const targetSelectors = [...introSelectors, ...nextSelectors];
 let config = {
   enabled: false,
   skipIntro: true,
-  nextEpisode: true
+  nextEpisode: true,
+  speed: 1.0
 };
 
 // read existing settings from storage
-chrome.storage.sync.get(config, (items) => {
-  config = items;
+chrome.storage.sync.get(null, (items) => {
+  if (items) {
+    config = { ...config, ...items };
+  }
+  // apply initial speed after config is loaded
+  applySpeed();
 });
 
 // update config when popup changes values
 chrome.storage.onChanged.addListener((changes) => {
   for (let key in changes) {
     config[key] = changes[key].newValue;
+    if (key === 'speed') {
+      applySpeed();
+    }
   }
 });
 
+// function to apply speed to video
+function applySpeed() {
+  const videos = document.querySelectorAll('video');
+  videos.forEach(video => {
+    video.playbackRate = config.speed;
+  });
+  if (videos.length > 0) {
+    console.log('Applied speed:', config.speed, 'to', videos.length, 'video(s)');
+  } else {
+    console.log('No video elements found');
+  }
+}
 
-
-// 2. 建立觀察器
+// Continuously apply speed every 500ms to handle dynamic video elements
+// setInterval(() => {
+//   applySpeed();
+// }, 500);
 
 const observer = new MutationObserver((mutations) => {
 
   if (!config.enabled) {
     return; // 已停用功能
   }
+  applySpeed(); // 每次 DOM 變動時嘗試應用速度
 
   for (const selector of targetSelectors) {
     if (introSelectors.includes(selector) && !config.skipIntro) {
@@ -74,6 +97,7 @@ observer.observe(document.body, {
   subtree: true
 
 });
+
 
 
 

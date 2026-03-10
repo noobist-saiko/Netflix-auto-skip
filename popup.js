@@ -3,7 +3,7 @@
 const defaults = {
   enabled: false,
   skipIntro: true,
-  nextEpisode: true
+  speed: 1.0
 };
 
 function restoreOptions() {
@@ -11,6 +11,7 @@ function restoreOptions() {
     document.getElementById('enableToggle').checked = items.enabled;
     document.getElementById('skipIntroToggle').checked = items.skipIntro;
     document.getElementById('nextEpisodeToggle').checked = items.nextEpisode;
+    document.getElementById('speedInput').value = items.speed;
   });
 }
 
@@ -33,5 +34,15 @@ window.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('nextEpisodeToggle').addEventListener('change', (e) => {
     saveOption('nextEpisode', e.target.checked);
+  });
+
+  document.getElementById('speedInput').addEventListener('input', (e) => {
+    const value = parseFloat(e.target.value);
+    console.log('Speed input changed:', value);
+    if (!isNaN(value) && value >= 0.5 && value <= 3) {
+      value=2;
+      saveOption('speed', value);
+      console.log('Speed saved:', value);
+    }
   });
 });

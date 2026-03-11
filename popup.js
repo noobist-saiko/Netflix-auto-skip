@@ -3,6 +3,7 @@
 const defaults = {
   enabled: false,
   skipIntro: true,
+  nextEpisode: true,
   speed: 1.0
 };
 
@@ -40,7 +41,6 @@ window.addEventListener('DOMContentLoaded', () => {
     const value = parseFloat(e.target.value);
     console.log('Speed input changed:', value);
     if (!isNaN(value) && value >= 0.5 && value <= 3) {
-      value=2;
       saveOption('speed', value);
       console.log('Speed saved:', value);
     }

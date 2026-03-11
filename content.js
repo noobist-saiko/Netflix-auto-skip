@@ -33,20 +33,32 @@ chrome.storage.sync.get(null, (items) => {
 });
 
 // update config when popup changes values
-chrome.storage.onChanged.addListener((changes) => {
-  for (let key in changes) {
-    config[key] = changes[key].newValue;
-    if (key === 'speed') {
-      applySpeed();
+chrome.storage.onChanged.addListener((changes,area) => {
+  if(area === 'sync') {
+    for (let key in changes) {
+      config[key] = changes[key].newValue;
+      if (key === 'speed') {
+        applySpeed();
+      }
+      if(key === 'enabled') {
+        if(config.enabled){
+          applySpeed();
+        } else {resetSpeed();}
+      }
     }
   }
 });
-
+// function to reset speed to default
+function resetSpeed() {
+  const videos = document.querySelectorAll('video');
+  videos.forEach(video=>{ video.playbackRate = 1.0; });
+}
 // function to apply speed to video
 function applySpeed() {
   const videos = document.querySelectorAll('video');
   videos.forEach(video => {
     video.playbackRate = config.speed;
+    console.log('Set video speed to:', config.speed);
   });
   if (videos.length > 0) {
     console.log('Applied speed:', config.speed, 'to', videos.length, 'video(s)');
@@ -55,17 +67,18 @@ function applySpeed() {
   }
 }
 
-// Continuously apply speed every 500ms to handle dynamic video elements
-// setInterval(() => {
-//   applySpeed();
-// }, 500);
-
 const observer = new MutationObserver((mutations) => {
 
   if (!config.enabled) {
     return; // 已停用功能
   }
-  applySpeed(); // 每次 DOM 變動時嘗試應用速度
+  const videos = document.querySelectorAll('video');
+  videos.forEach(video => {
+    if (video.playbackRate !== config.speed) {
+      video.playbackRate = config.speed;
+      console.log('Netflix tried to reset speed, reapplying:', config.speed);
+    }
+  });
 
   for (const selector of targetSelectors) {
     if (introSelectors.includes(selector) && !config.skipIntro) {
@@ -97,7 +110,6 @@ observer.observe(document.body, {
   subtree: true
 
 });
-
 
 
 

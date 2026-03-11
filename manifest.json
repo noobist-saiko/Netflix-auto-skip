@@ -5,17 +5,19 @@
   "description": "Automatically skip intro and next episode on Netflix",
   "permissions": ["activeTab","storage"],
   "icons": {
-    "16": "icon.png",
-    "48": "icon.png",
-    "128": "icon.png"
+    "16": "icon/16.png",
+    "32": "icon/32.png",
+    "48": "icon/48.png",
+    "128": "icon/128.png"
   },
   "action": {
     "default_title": "Netflix Auto Skip",
     "default_popup": "popup.html",
     "default_icon": {
-      "16": "icon.png",
-      "48": "icon.png",
-      "128": "icon.png"
+      "16": "icon/16.png",
+      "32": "icon/32.png",
+      "48": "icon/48.png",
+      "128": "icon/128.png"
     }
   },
   "content_scripts": [

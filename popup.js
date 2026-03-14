@@ -7,15 +7,6 @@ const defaults = {
   speed: 1.0
 };
 
-function restoreOptions() {
-  chrome.storage.sync.get(defaults, (items) => {
-    document.getElementById('enableToggle').checked = items.enabled;
-    document.getElementById('skipIntroToggle').checked = items.skipIntro;
-    document.getElementById('nextEpisodeToggle').checked = items.nextEpisode;
-    document.getElementById('speedInput').value = items.speed;
-  });
-}
-
 function saveOption(key, value) {
   const obj = {};
   obj[key] = value;
@@ -23,26 +14,32 @@ function saveOption(key, value) {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  restoreOptions();
-
-  document.getElementById('enableToggle').addEventListener('change', (e) => {
-    saveOption('enabled', e.target.checked);
+  const controls = document.querySelectorAll('[data-key]');
+  
+  // Attach change listeners immediately (no waiting for storage)
+  controls.forEach(control => {
+    const key = control.dataset.key;
+    control.addEventListener(control.type === 'checkbox' ? 'change' : 'input', (e) => {
+      const value = control.type === 'checkbox' ? e.target.checked : parseFloat(e.target.value);
+      
+      // Validate speed range
+      if (key === 'speed' && (isNaN(value) || value < 0.5 || value > 3)) {
+        return;
+      }
+      
+      saveOption(key, value);
+    });
   });
-
-  document.getElementById('skipIntroToggle').addEventListener('change', (e) => {
-    saveOption('skipIntro', e.target.checked);
-  });
-
-  document.getElementById('nextEpisodeToggle').addEventListener('change', (e) => {
-    saveOption('nextEpisode', e.target.checked);
-  });
-
-  document.getElementById('speedInput').addEventListener('input', (e) => {
-    const value = parseFloat(e.target.value);
-    console.log('Speed input changed:', value);
-    if (!isNaN(value) && value >= 0.5 && value <= 3) {
-      saveOption('speed', value);
-      console.log('Speed saved:', value);
-    }
+  
+  // Load values asynchronously (won't block initial paint)
+  chrome.storage.sync.get(defaults, (items) => {
+    controls.forEach(control => {
+      const key = control.dataset.key;
+      if (control.type === 'checkbox') {
+        control.checked = items[key];
+      } else {
+        control.value = items[key];
+      }
+    });
   });
 });

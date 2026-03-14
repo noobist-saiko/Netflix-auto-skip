@@ -12,10 +12,10 @@
 </head>
 <body>
   <h3>Auto Skip Settings</h3>
-  <label><input type="checkbox" id="enableToggle">Enable Auto Skip</label>
-  <label><input type="checkbox" id="skipIntroToggle">Skip Intro</label>
-  <label><input type="checkbox" id="nextEpisodeToggle">Next Episode</label>
-  <label>Video Speed: <input type="number" id="speedInput" min="0.5" max="3" step="0.1" value="1">x</label>
+  <label><input type="checkbox" id="enableToggle" data-key="enabled">Enable Auto Skip</label>
+  <label><input type="checkbox" id="skipIntroToggle" data-key="skipIntro">Skip Intro</label>
+  <label><input type="checkbox" id="nextEpisodeToggle" data-key="nextEpisode">Next Episode</label>
+  <label>Video Speed: <input type="number" id="speedInput" data-key="speed" min="0.5" max="3" step="0.1" value="1">x</label>
 
   <script src="popup.js"></script>
 </body>

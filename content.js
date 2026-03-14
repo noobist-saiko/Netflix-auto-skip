@@ -1,21 +1,16 @@
-
-// 1. 定義要監控的按鈕特徵。分為「跳過介紹」和「下一集」兩類，方便根據設定啟用/停用。
+// Netflix Auto Skip (Optimized)
 
 const introSelectors = [
-  '.watch-video--skip-content-button', // 略過介紹
+  '.watch-video--skip-content-button',
   '[aria-label="Skip Intro"]'
 ];
 
 const nextSelectors = [
-  '.watch-video--next-episode-button', // 下一集
+  '.watch-video--next-episode-button',
   '[aria-label="Next Episode"]',
   '[data-uia="next-episode-seamless-button-draining"]'
 ];
 
-// 合併以便遍歷
-const targetSelectors = [...introSelectors, ...nextSelectors];
-
-// configuration state with defaults
 let config = {
   enabled: false,
   skipIntro: true,
@@ -23,94 +18,124 @@ let config = {
   speed: 1.0
 };
 
-// read existing settings from storage
+let cachedVideo = null;
+let speedApplyTimer = null;
+
+// load config
 chrome.storage.sync.get(null, (items) => {
-  if (items) {
-    config = { ...config, ...items };
-  }
-  // apply initial speed after config is loaded
-  applySpeed();
+  if (items) config = { ...config, ...items };
 });
 
-// update config when popup changes values
-chrome.storage.onChanged.addListener((changes,area) => {
-  if(area === 'sync') {
-    for (let key in changes) {
-      config[key] = changes[key].newValue;
-      if (key === 'speed') {
-        applySpeed();
-      }
-      if(key === 'enabled') {
-        if(config.enabled){
-          applySpeed();
-        } else {resetSpeed();}
+// update config when popup changes — debounce speed changes to avoid stutter
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'sync') return;
+
+  for (let key in changes) {
+    config[key] = changes[key].newValue;
+  }
+
+  applySpeedDebounced();
+});
+
+function applySpeedDebounced() {
+  if (speedApplyTimer) clearTimeout(speedApplyTimer);
+  speedApplyTimer = setTimeout(() => {
+    if (cachedVideo && config.enabled) {
+      cachedVideo.playbackRate = config.speed;
+    }
+  }, 150);
+}
+
+// detect and cache video element, apply speed only if changed
+function detectVideo(node) {
+  if (node.tagName === 'VIDEO') {
+    cachedVideo = node;
+    if (config.enabled) {
+      const target = config.speed;
+      if (Math.abs(cachedVideo.playbackRate - target) > 0.01) {
+        cachedVideo.playbackRate = target;
       }
     }
   }
-});
-// function to reset speed to default
-function resetSpeed() {
-  const videos = document.querySelectorAll('video');
-  videos.forEach(video=>{ video.playbackRate = 1.0; });
 }
-// function to apply speed to video
-function applySpeed() {
-  const videos = document.querySelectorAll('video');
-  videos.forEach(video => {
-    video.playbackRate = config.speed;
-    console.log('Set video speed to:', config.speed);
-  });
-  if (videos.length > 0) {
-    console.log('Applied speed:', config.speed, 'to', videos.length, 'video(s)');
-  } else {
-    console.log('No video elements found');
+
+// click matching button — check self AND children (Netflix adds buttons inside container divs)
+function detectButtons(node) {
+  if (!node.matches && !node.querySelector) return;
+
+  if (config.skipIntro) {
+    for (const sel of introSelectors) {
+      if (node.matches && node.matches(sel)) { node.click(); return; }
+      if (node.querySelector) {
+        const btn = node.querySelector(sel);
+        if (btn) { btn.click(); return; }
+      }
+    }
+  }
+
+  if (config.nextEpisode) {
+    for (const sel of nextSelectors) {
+      if (node.matches && node.matches(sel)) { node.click(); return; }
+      if (node.querySelector) {
+        const btn = node.querySelector(sel);
+        if (btn) { btn.click(); return; }
+      }
+    }
+  }
+}
+
+// batch and process mutations via requestAnimationFrame to stay off the hot path
+let pendingNodes = [];
+let rafScheduled = false;
+
+function processPending() {
+  rafScheduled = false;
+  if (!config.enabled) { pendingNodes = []; return; }
+
+  const nodes = pendingNodes;
+  pendingNodes = [];
+
+  for (const node of nodes) {
+    detectVideo(node);
+    detectButtons(node);
   }
 }
 
 const observer = new MutationObserver((mutations) => {
+  if (!config.enabled) return;
 
-  if (!config.enabled) {
-    return; // 已停用功能
-  }
-  const videos = document.querySelectorAll('video');
-  videos.forEach(video => {
-    if (video.playbackRate !== config.speed) {
-      video.playbackRate = config.speed;
-      console.log('Netflix tried to reset speed, reapplying:', config.speed);
+  for (const mutation of mutations) {
+    for (const node of mutation.addedNodes) {
+      if (node.nodeType !== 1) continue; // element nodes only
+      pendingNodes.push(node);
+
+      // also capture a video nested inside the added node (e.g. initial load)
+      if (node.querySelector) {
+        const video = node.querySelector('video');
+        if (video) pendingNodes.push(video);
+      }
     }
+  }
+
+  if (!rafScheduled && pendingNodes.length) {
+    rafScheduled = true;
+    requestAnimationFrame(processPending);
+  }
+});
+
+// wait for netflix player
+function startObserver() {
+  const player = document.querySelector('.watch-video');
+
+  if (!player) {
+    setTimeout(startObserver, 1000);
+    return;
+  }
+
+  observer.observe(player, {
+    childList: true,
+    subtree: true
   });
+}
 
-  for (const selector of targetSelectors) {
-    if (introSelectors.includes(selector) && !config.skipIntro) {
-      continue;
-    }
-    if (nextSelectors.includes(selector) && !config.nextEpisode) {
-      continue;
-    }
-
-    const button = document.querySelector(selector);
-
-    if (button) {
-      console.log('偵測到按鈕：', selector);
-      button.click();
-      break;
-    }
-  }
-
-});
-
-
-
-// 3. 開始監控整個 body 的子節點變動
-
-observer.observe(document.body, {
-
-  childList: true,
-
-  subtree: true
-
-});
-
-
-
-console.log('自動略過腳本已啟動...');
+startObserver();
